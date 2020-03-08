@@ -5,15 +5,15 @@ STD	= -std=c++11
 .cpp.o:
 	$(CXX) -Wall -c -g $(STD) $< -o $*.o
 
-ezusbcc: ezusbcc.o 
-	$(CXX) $(STD) ezusbcc.o -o ezusbcc
+gpif_compiler: gpif_compiler.o
+	$(CXX) $(STD) $^ -o $@
 
 clean:
-	rm -f *.o 
+	rm -f *.o *~
 
 clobber: clean
-	rm -f ezusbcc
+	rm -f gpif_compiler
 
-test::	ezusbcc
-	./ezusbcc <testwave.wvf
-	./ezusbcc gpif.c
+test: gpif_compiler
+	./gpif_compiler < testwave.wvf
+	./gpif_compiler testgpif.c

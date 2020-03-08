@@ -1,2 +1,4 @@
-ezusbcc
+gpif_compiler
 *.o
+*~
+*.inc

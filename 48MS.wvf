@@ -1,0 +1,16 @@
+; Test waveform file for ezusbcc.cpp
+;
+; Comment header
+;
+	.TRICTL		1		; Assume TRICTL=1
+	.EP		6		; Assume for Endpoint 6
+
+	.IFCLKSRC	1		; internal 30/48 MHz to GPIF
+	.3048MHZ	1		; 30 MHz
+	.IFCLKOE	1		; IFCLK output active to ADC
+
+	.WAVEFORM	48		; Name this waveform
+
+	JD*	RDY0 AND RDY0 $0 $0			; 1 cycle, jp 0
+
+; End

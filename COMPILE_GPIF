@@ -1,0 +1,6 @@
+#!/bin/sh
+
+for WVF in *S.wvf; do
+	./ezusbcc < ${WVF} > ${WVF}.inc
+done
+

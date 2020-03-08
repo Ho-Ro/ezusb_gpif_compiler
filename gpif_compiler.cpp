@@ -2,7 +2,7 @@
 // ezusbcc.cpp -- GPIF assembler for EZ-USB
 // Date: Thu Mar 22 22:29:43 2018   (C) Warren W. Gay VE3WWG
 ///////////////////////////////////////////////////////////////////////
-// 
+//
 // This is a simple assember, to generate wave tables. This program
 // accepts the source code from stdin and generates the C code on
 // stdout. Listing and errors are put to stderr.
@@ -11,12 +11,15 @@
 //
 // ; Comments..
 //
-// 	.PSEUDOOP	<arg>			; Comment
-// 	...
+//	.PSEUDOOP	<arg>			; Comment
+//	...
 //	OPCODE		operand1 ... operandn  	; comment
 //
 // PSEUDO OPS:
 //
+//	.IFCLKSRC	{ 0 | 1 }		; IFCLKSRC, 0: ext, 1: int (30/48 MHz)
+//	.MHZ3048	{ 0 | 1 }		; 3048MHZ, 0: 30MHz, 1: 48MHz
+//	.IFCLKOE	{ 0 | 1 }		; IFCLKOE, 0: tri-state, 1: drive
 //	.TRICTL		{ 0 | 1 }		; Affects Outputs
 //	.GPIFREADYCFG5	{ 0 | 1 }		; TC when 1, else RDY5
 //	.GPIFREADYCFG7	{ 0 | 1 }		; INTRDY available when 1
@@ -25,14 +28,14 @@
 //	.WAVEFORM	n			; Names output C code array
 //
 // NDP OPCODES:
-//	[S][+][G][D][N]   	[count=1] [OEn] [CTLn]
+//	[S][+][G][D][N]		[count=1] [OEn] [CTLn]
 // or	Z			[count=1] [OEn] [CTLn]
 //
 // DP OPCODES:
 //	J[S][+][G][D][N][*]   	A OP B [OEn] [CTLn] $1 $2
 // where:
 //	A/B is one of:		RDY0 RDY1 RDY2 RDY3 RDY4 RDY5 TC PF EF FF INTRDY
-//				  These are subject to environment.
+//				These are subject to environment.
 // and  OP is one of:		AND OR XOR /AND (/A AND B)
 //
 // OPCODE CHARACTERS:
@@ -67,6 +70,7 @@
 #include <assert.h>
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -77,15 +81,21 @@
 static void uncompile(int argc,char **argv);
 
 enum class PseudoOps {
+	IfClkSrc,		//
+	MHz3048,		//
+	IfClkOE,		//
 	Trictl,			// TRICTL
-	GpifReadyCfg5,		// 
-	GpifReadyCfg7,		// 
+	GpifReadyCfg5,		//
+	GpifReadyCfg7,		//
 	EpxGpifFlgSel,		// PF, EF or FF
 	Ep,			// 2, 4, 6 or 8
 	WaveForm,		// x
 };
 
 static const std::map<std::string,int> pseudotab = {
+	{ ".IFCLKSRC",		int(PseudoOps::IfClkSrc) },
+	{ ".3048MHZ",		int(PseudoOps::MHz3048) },
+	{ ".IFCLKOE",		int(PseudoOps::IfClkOE) },
 	{ ".TRICTL",		int(PseudoOps::Trictl) },
 	{ ".GPIFREADYCFG5",	int(PseudoOps::GpifReadyCfg5) },
 	{ ".GPIFREADYCFG7",	int(PseudoOps::GpifReadyCfg7) },
@@ -381,7 +391,7 @@ parse(std::istream& istr,s_instr& instr) {
 			break;
 		}
 	}
-		
+
 	while ( !istr.eof() ) {
 		if ( istr.get() == '\n' )
 			break;
@@ -396,6 +406,9 @@ main(int argc,char **argv) {
 
 	std::vector<s_instr> instrs;
 	std::map<unsigned,unsigned> environ = {
+		{ unsigned(PseudoOps::IfClkSrc),	0u },
+		{ unsigned(PseudoOps::MHz3048),		0u },
+		{ unsigned(PseudoOps::IfClkOE),		0u },
 		{ unsigned(PseudoOps::Trictl),		0u },
 		{ unsigned(PseudoOps::GpifReadyCfg5),	0u },
 		{ unsigned(PseudoOps::GpifReadyCfg7),	0u },
@@ -403,12 +416,16 @@ main(int argc,char **argv) {
 		{ unsigned(PseudoOps::Ep),		2u },
 		{ unsigned(PseudoOps::WaveForm),	0u },
 	};
+	unsigned& ifclksrc = environ.at(unsigned(PseudoOps::IfClkSrc));
+	unsigned& mhz3048 = environ.at(unsigned(PseudoOps::MHz3048));
+	unsigned& ifclkoe = environ.at(unsigned(PseudoOps::IfClkOE));
 	unsigned& trictl = environ.at(unsigned(PseudoOps::Trictl));
 	unsigned& gpifreadycfg5 = environ.at(unsigned(PseudoOps::GpifReadyCfg5));
 	unsigned& gpifreadycfg7 = environ.at(unsigned(PseudoOps::GpifReadyCfg7));
 	unsigned& epxgpifflgsel= environ.at(unsigned(PseudoOps::EpxGpifFlgSel));
 	unsigned& waveformx= environ.at(unsigned(PseudoOps::WaveForm));
 	unsigned state = 0;
+        unsigned ifconfig = 0;
 
 	{
 		s_instr instr;
@@ -422,13 +439,13 @@ main(int argc,char **argv) {
 
 				if ( instr.stroperands.size() != 1 ) {
 					std::cerr << "*** ERROR: Only one operand valid for pseudo op " << instr.stropcode << '\n';
-					exit(1);					
+					exit(1);
 				}
-				if ( pseudoop != PseudoOps::EpxGpifFlgSel ) {
+				if ( pseudoop != PseudoOps::EpxGpifFlgSel ) { // numeric values
 					value = strtoul(instr.stroperands[0].c_str(),&ep,10);
 					bool fail = false;
 
-					if ( pseudoop != PseudoOps::WaveForm ) {
+					if ( pseudoop != PseudoOps::WaveForm ) { // valid: 0/1 or 2/4/6/8
 						fail = value > ( pseudoop != PseudoOps::Ep ? 1 : 8 );
 
 						if ( !fail && pseudoop == PseudoOps::Ep && (value & 1) )
@@ -454,6 +471,8 @@ main(int argc,char **argv) {
 			}
 		}
 	}
+
+	ifconfig = ( ifclksrc << 7 | mhz3048 << 6 | ifclkoe << 5 | 0x0a );
 
 	for ( auto& instr : instrs ) {
 		// Parse opcode:
@@ -492,7 +511,7 @@ main(int argc,char **argv) {
 					ss << "Unknown opcode '" << c << "'";
 					instr.error = ss.str();
 				}
-			}			
+			}
 		}
 
 		// Parse operands:
@@ -661,6 +680,9 @@ main(int argc,char **argv) {
 		const std::array<const char *,3> opers = { { "PF", "EF", "FF" } };
 
 		switch ( PseudoOps(ps) ) {
+		case PseudoOps::IfClkSrc:
+		case PseudoOps::MHz3048:
+		case PseudoOps::IfClkOE:
 		case PseudoOps::Trictl:
 		case PseudoOps::GpifReadyCfg5:
 		case PseudoOps::GpifReadyCfg7:
@@ -710,14 +732,18 @@ main(int argc,char **argv) {
 
 	instrs.resize(8);
 
-	std::cout << "static unsigned char waveform" << waveformx << "[32] = { \n\t";
+	std::cout << "const unsigned char ifconfig_" << waveformx << " = 0x";
+	std::cout.width(2);
+	std::cout.fill('0');
+	std::cout << std::hex << ifconfig << std::dec << ";\n\n";
 
+	std::cout << "static unsigned char waveform_" << waveformx << "[ 32 ] = {\n\t";
 	for ( auto& instr : instrs ) {
 		std::cout << "0x";
 		std::cout.width(2);
 		std::cout.fill('0');
 		std::cout << std::uppercase << std::hex << unsigned(instr.branch.byte) << ',';
-	}			
+	}
 	std::cout << "\n\t";
 
 	for ( auto& instr : instrs ) {
@@ -823,7 +849,7 @@ decompile(unsigned waveformx,uint8_t data[32]) {
 
 		if ( opcode.bits.dp == 0 ) {
 			// NDP
-			
+
 			if ( branch.byte == 0 )
 				oper << "256 ";
 			else	oper << unsigned(branch.byte) << ' ';
