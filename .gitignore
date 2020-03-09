@@ -1,4 +1,5 @@
 gpif_compiler
+gpif_decompiler
 *.o
 *~
 *.inc

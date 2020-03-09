@@ -1,6 +1,5 @@
 #!/bin/sh
 
-for WVF in *S.wvf; do
-	./ezusbcc < ${WVF} > ${WVF}.inc
+for WVF in WVF/*.wvf; do
+	./gpif_compiler < ${WVF} > WVF/$(basename ${WVF} .wvf).inc
 done
-
