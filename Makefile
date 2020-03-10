@@ -2,7 +2,7 @@ all: gpif_compiler gpif_decompiler
 
 CXX	= g++
 
-STD	= -std=gnu++11
+STD	= -std=c++11
 
 .cpp.o:
 	$(CXX) -Wall -c -g $(STD) $< -o $*.o
@@ -19,7 +19,6 @@ clean:
 clobber: clean
 	rm -f gpif_compiler gpif_decompiler
 
-
 test: compilertest decompilertest
 
 compilertest: gpif_compiler
@@ -27,3 +26,6 @@ compilertest: gpif_compiler
 
 decompilertest: gpif_decompiler
 	./gpif_decompiler testgpif.c
+
+wvf_files: gpif_compiler
+	cd WVF; ./COMPILE_GPIF
