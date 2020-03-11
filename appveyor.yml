@@ -13,4 +13,4 @@ build_script:
 
     make deb
 artifacts:
-- path: ezusb-gpif-compiler_0.1-1_amd64.deb
+- path: ezusb-gpif-compiler_*.deb
