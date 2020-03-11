@@ -22,7 +22,7 @@ clean:
 
 .PHONY: clobber
 clobber: clean
-	rm -f gpif_compiler gpif_decompiler
+	rm -f gpif_compiler gpif_decompiler *.deb
 
 .PHONY: test
 test: compilertest decompilertest
@@ -42,4 +42,4 @@ install: gpif_compiler gpif_decompiler
 
 .PHONY: deb
 deb: all
-	fakeroot checkinstall --pkgname ezusb_gpif_compiler --pkgversion 0.2 --default --install=no --backup=no --deldoc=yes
+	fakeroot checkinstall --pkgname $(PACKAGE) --pkgversion 0.2 --default --fstrans=yes --install=no --backup=no --deldoc=yes

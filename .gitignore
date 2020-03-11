@@ -3,4 +3,5 @@ gpif_decompiler
 *.o
 *~
 *.inc
+doc-pak/
 *.deb
