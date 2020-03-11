@@ -1,7 +1,7 @@
 OPEN SOURCE EZ-USB WAVEFORM COMPILER
 ====================================
 
-[![Build status](https://ci.appveyor.com/api/projects/status/github/Ho-Ro/ezusb_gpif_compiler?branch=master&svg=true)](https://ci.appveyor.com/project/Ho-Ro/ezusb_gpif_compiler/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/Ho-Ro/ezusb_gpif_compiler?branch=master&svg=true)](https://ci.appveyor.com/project/Ho-Ro/ezusb-gpif-compiler/branch/master)
 [![Stability: Active](https://masterminds.github.io/stability/active.svg)](https://masterminds.github.io/stability/active.html)
 
 This is a simple command-line compiler that generates GPIF wave tables for Cypress EzUSB devices.
@@ -11,10 +11,11 @@ If you want to build this tool from source you need the package `libusb-1.0-0-de
 To build the binaries simply type `make`
 
 If you want to build a simple Debian package that can be installed and uninstalled cleanly,
-you need also the packages `fakeroot` and `checkinstall`. To build the Debian package type `make deb`.
+you need also the packages `fakeroot` and `checkinstall` (checkinstall is currently not in *buster* but it's available in [*buster-backports*](https://packages.debian.org/de/buster-backports/checkinstall)
+as well as in *bullseye* and *sid*). To build the Debian package type `make deb`.
 This can be done as user, but you must be root to install the package, e.g. `sudo apt install ./ezusb-gpif-compiler_*.deb`.
 
-This tool is developed and built on Debian stable. An experimental Debian package from latest build is available at [appveyor](https://ci.appveyor.com/project/Ho-Ro/ezusb-gpif-compiler/build/artifacts).
+This tool is developed and built on a Debian stable system. An experimental Debian package from latest CI build (on an Ubuntu system) is available at [appveyor](https://ci.appveyor.com/project/Ho-Ro/ezusb-gpif-compiler/build/artifacts).
 
 ## Source code format (UPPERCASE ONLY):
 
@@ -45,7 +46,7 @@ This tool is developed and built on Debian stable. An experimental Debian packag
      where:
         A/B is one of:          RDY0 RDY1 RDY2 RDY3 RDY4 RDY5 TC PF EF FF INTRDY
                                   These are subject to environment.
-     and  OP is one of:         AND OR XOR /AND (/A AND B)
+     and OP is one of:          AND OR XOR /AND (/A AND B)
 
      OPCODE CHARACTERS:
         S       SGL (Single)
@@ -134,11 +135,11 @@ To decompile, specify a file name:
 
 # HowTo: Create GPIF waveform files for the `gpif-compiler`
 
-The examples in the directory `ẀVF` are based on the real hardware of the Hantek6022BE, this is a cheap digital storage scope.
+The files in the `examples`directory are based on the real hardware of the Hantek6022BE, this is a cheap digital storage scope.
 It consists mainly of an EzUSB with a dual channel 8-bit ADC [AD9288](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9288.pdf).
 The ADC can operate on variable clock frequencies (20kHz..48MHz) coming from either the IFCLK or CTL2 output of the EzUSB to sample signals of different speeds.
 
-## Hantek6022 ADC backend
+## Hantek6022BE ADC backend
 
              .---------.           .---------------.
              | AD9288  |           |     EzUSB     |
@@ -149,6 +150,7 @@ The ADC can operate on variable clock frequencies (20kHz..48MHz) coming from eit
              |         |           |               |
              |    ENCA |<----+-----| IFCLK         |
              |         |     |     |               |
+             |         |     |     |          USB  |<====>
              |         |     |     |               |
              |    ENCB |<----+-----| CTL2          |
              |         |           |               |
@@ -163,7 +165,7 @@ The ADC can operate on variable clock frequencies (20kHz..48MHz) coming from eit
 These values need to be set globally once at device init.
 
 	GPIFIDLECTL = 0x00; // Don't enable CTLx outputs
-	GPIFCTLCFG = 0x80;  // TRICTL=1. CTL0..3: CMOS outputs, tri-statable
+	GPIFCTLCFG  = 0x80; // TRICTL=1. CTL0..3: CMOS outputs, tri-statable
 
 
 ## IFCONFIG settings
@@ -230,9 +232,9 @@ Save this as `gpif_30.wvf`
 
 Execute `gpif_compiler < gpif_30.wvf > gpif_30.inc` to create the C include file `gpif_30.inc`
 
-	const unsigned char ifconfig_30 = 0xaa;
+	static const unsigned char ifconfig_30 = 0xaa;
 
-	static unsigned char waveform_30[ 32 ] = {
+	static const unsigned char waveform_30[ 32 ] = {
 		0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 		0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 		0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -258,9 +260,9 @@ Save this as `gpif_24.wvf`
 
 Execute `gpif_compiler < gpif_24.wvf > gpif_24.inc` to create the C include file `gpif_24.inc`
 
-	const unsigned char ifconfig_24 = 0xca;
+	static const unsigned char ifconfig_24 = 0xca;
 
-	static unsigned char waveform_24[ 32 ] = {
+	static const unsigned char waveform_24[ 32 ] = {
 		0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 		0x02,0x01,0x00,0x00,0x00,0x00,0x00,0x00,
 		0x40,0x44,0x00,0x00,0x00,0x00,0x00,0x00,
