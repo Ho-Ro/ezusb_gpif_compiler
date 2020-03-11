@@ -1,0 +1,16 @@
+version: 0.2.{build}
+image: Ubuntu1804
+install:
+- sh: >-
+    sudo apt-get update
+
+    sudo apt-get install --quiet --yes fakeroot checkinstall libusb-1.0-0-dev
+build_script:
+- sh: >-
+    make
+
+    make test
+
+    make deb
+artifacts:
+- path: ezusb-gpif-compiler_0.1-1_amd64.deb

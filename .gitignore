@@ -3,3 +3,4 @@ gpif_decompiler
 *.o
 *~
 *.inc
+*.deb
