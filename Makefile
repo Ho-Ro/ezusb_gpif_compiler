@@ -1,5 +1,3 @@
-all: gpif_compiler gpif_decompiler
-
 PACKAGE = ezusb-gpif-compiler
 
 CXX	= g++
@@ -8,6 +6,9 @@ STD	= -std=c++11
 
 .cpp.o:
 	$(CXX) -Wall -c -g $(STD) $< -o $*.o
+
+.PHONY: all
+all: gpif_compiler gpif_decompiler
 
 gpif_compiler: gpif_compiler.o
 	$(CXX) $(STD) $^ -o $@
@@ -18,7 +19,7 @@ gpif_decompiler: gpif_decompiler.o
 .PHONY: clean
 clean:
 	rm -f *.o *~
-	rm -f WVF/*.inc
+	rm -f examples/*.inc
 
 .PHONY: clobber
 clobber: clean
@@ -33,13 +34,16 @@ compilertest: gpif_compiler
 decompilertest: gpif_decompiler
 	./gpif_decompiler testgpif.c
 
-wvf_files: gpif_compiler
-	cd WVF; ./COMPILE_GPIF
+.PHONY: examples
+examples: gpif_compiler
+	cd examples; ./COMPILE_GPIF.sh
 
 .PHONY: install
 install: gpif_compiler gpif_decompiler
 	install $? /usr/local/bin
+	cp -r examples doc-pak
 
 .PHONY: deb
 deb: all
-	fakeroot checkinstall --pkgname $(PACKAGE) --pkgversion 0.2 --default --fstrans=yes --install=no --backup=no --deldoc=yes
+	fakeroot checkinstall --pkgname $(PACKAGE) --pkgversion 0.2 --pkggroup=electronics --requires libusb-1.0-0 --default --fstrans=yes --install=no --backup=no --deldoc=yes
+	-rm -r doc-pak

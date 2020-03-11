@@ -1,10 +1,22 @@
 OPEN SOURCE EZ-USB WAVEFORM COMPILER
 ====================================
 
-This is a simple compiler that generates GPIF wave tables for Cypress EzUSB devices
+[![Build status](https://ci.appveyor.com/api/projects/status/github/Ho-Ro/ezusb_gpif_compiler?branch=master&svg=true)](https://ci.appveyor.com/project/Ho-Ro/ezusb_gpif_compiler/branch/master)
+[![Stability: Active](https://masterminds.github.io/stability/active.svg)](https://masterminds.github.io/stability/active.html)
 
-## SOURCE CODE FORMAT (UPPERCASE ONLY):
+This is a simple command-line compiler that generates GPIF wave tables for Cypress EzUSB devices.
 
+## Building instructions
+If you want to build this tool from source you need the package `libusb-1.0-0-dev`.
+To build the binaries simply type `make`
+
+If you want to build a simple Debian package that can be installed and uninstalled cleanly,
+you need also the packages `fakeroot` and `checkinstall`. To build the Debian package type `make deb`.
+This can be done as user, but you must be root to install the package, e.g. `sudo apt install ./ezusb-gpif-compiler_*.deb`.
+
+This tool is developed and built on Debian stable. An experimental Debian package from latest build is available at [appveyor](https://ci.appveyor.com/project/Ho-Ro/ezusb-gpif-compiler/build/artifacts).
+
+## Source code format (UPPERCASE ONLY):
 
      ; Comments..
 
@@ -21,7 +33,7 @@ This is a simple compiler that generates GPIF wave tables for Cypress EzUSB devi
         .GPIFREADYCFG5  { 0 | 1 }               ; TC when 1, else RDY5
         .GPIFREADYCFG7  { 0 | 1 }               ; INTRDY available when 1
         .EPXGPIFFLGSEL  { PF | EF | FF }        ; Selected FIFO flag
-        .EP             { 2 | 4 | 6 | 8 }       ; Default 2
+        .EP             { 2 | 4 | 6 | 8 }       ; Select endpoint, default=2 (unused)
         .WAVEFORM       n                       ; Names output C code array
     
      NDP (non decision point) OPCODES:
@@ -29,7 +41,7 @@ This is a simple compiler that generates GPIF wave tables for Cypress EzUSB devi
      or Z                       [count=1] [OEn] [CTLn]
 
      DP (decision point) OPCODES:
-        J[S][+][G][D][N][*]     A OP B [OEn] [CTLn] $1 $2
+        J[S][+][G][D][N][*]     A OP B $1 $2 [OEn] [CTLn]
      where:
         A/B is one of:          RDY0 RDY1 RDY2 RDY3 RDY4 RDY5 TC PF EF FF INTRDY
                                   These are subject to environment.
@@ -46,6 +58,7 @@ This is a simple compiler that generates GPIF wave tables for Cypress EzUSB devi
 
 
 ## Compiling
+
 This program accepts the source code from stdin and generates the C code on stdout.
 Listing and errors are put to stderr.
 
@@ -98,7 +111,7 @@ modes such as PF|EF|FF are also not known but emitted as such.
 
 To decompile, specify a file name:
 
-    $ ./gpif_decompiler gpif.c
+    $ ./gpif_decompiler testgpif.c
     128 bytes.
     ; WaveForm 0
     01000007    Z       1 CTL2 CTL1 CTL0 
@@ -121,7 +134,7 @@ To decompile, specify a file name:
 
 # HowTo: Create GPIF waveform files for the `gpif-compiler`
 
-The examples in this directory are based on the real hardware of the Hantek6022BE, this is a cheap digital storage scope.
+The examples in the directory `ẀVF` are based on the real hardware of the Hantek6022BE, this is a cheap digital storage scope.
 It consists mainly of an EzUSB with a dual channel 8-bit ADC [AD9288](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9288.pdf).
 The ADC can operate on variable clock frequencies (20kHz..48MHz) coming from either the IFCLK or CTL2 output of the EzUSB to sample signals of different speeds.
 
@@ -295,9 +308,3 @@ Save this as `gpif_102.wvf` and execute `gpif_compiler < gpif_102.wvf > gpif_102
 
 Repeat these steps for all other wanted sample rates to create more include files and use them in your software.
 
-
-
-
-
-
-                                          *
