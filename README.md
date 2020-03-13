@@ -2,9 +2,8 @@ OPEN SOURCE EZ-USB WAVEFORM COMPILER
 ====================================
 
 [![Build status](https://ci.appveyor.com/api/projects/status/github/Ho-Ro/ezusb_gpif_compiler?branch=master&svg=true)](https://ci.appveyor.com/project/Ho-Ro/ezusb-gpif-compiler/branch/master)
-[![Stability: Active](https://masterminds.github.io/stability/active.svg)](https://masterminds.github.io/stability/active.html)
 
-This is a simple command-line compiler that generates GPIF wave tables for Cypress EzUSB devices.
+This is a simple command-line compiler that generates GPIF wave tables for Cypress EZ-USB® devices.
 
 ## Building instructions
 If you want to build this tool from source you need the package `libusb-1.0-0-dev`.
@@ -12,7 +11,7 @@ To build the binaries simply type `make`
 
 If you want to build a simple Debian package that can be installed and uninstalled cleanly,
 you need also the packages `fakeroot` and `checkinstall` (checkinstall is currently not in *buster* but it's available in [*buster-backports*](https://packages.debian.org/de/buster-backports/checkinstall)
-as well as in *bullseye* and *sid*). To build the Debian package type `make deb`.
+as well as in *stretch*, *bullseye* and *sid*). To build the Debian package type `make deb`.
 This can be done as user, but you must be root to install the package, e.g. `sudo apt install ./ezusb-gpif-compiler_*.deb`.
 
 This tool is developed and built on a Debian stable system. An experimental Debian package from latest CI build (on an Ubuntu system) is available at [appveyor](https://ci.appveyor.com/project/Ho-Ro/ezusb-gpif-compiler/build/artifacts).
@@ -24,9 +23,9 @@ This tool is developed and built on a Debian stable system. An experimental Debi
         .PSEUDOOP	<arg>                   ; Comment
         ...
         OPCODE          operand1 ... operandn   ; comment
-    
+
      PSEUDO OPS:
-    
+
         .IFCLKSRC       { 0 | 1 }               ; IFCLKSRC, 0: ext, 1: int (30/48 MHz)
         .MHZ3048        { 0 | 1 }               ; 3048MHZ, 0: 30MHz, 1: 48MHz
         .IFCLKOE        { 0 | 1 }               ; IFCLKOE, 0: tri-state, 1: drive
@@ -36,7 +35,7 @@ This tool is developed and built on a Debian stable system. An experimental Debi
         .EPXGPIFFLGSEL  { PF | EF | FF }        ; Selected FIFO flag
         .EP             { 2 | 4 | 6 | 8 }       ; Select endpoint, default=2 (unused)
         .WAVEFORM       n                       ; Names output C code array
-    
+
      NDP (non decision point) OPCODES:
         [S][+][G][D][N]         [count=1] [OEn] [CTLn]
      or Z                       [count=1] [OEn] [CTLn]
@@ -47,6 +46,10 @@ This tool is developed and built on a Debian stable system. An experimental Debi
         A/B is one of:          RDY0 RDY1 RDY2 RDY3 RDY4 RDY5 TC PF EF FF INTRDY
                                   These are subject to environment.
      and OP is one of:          AND OR XOR /AND (/A AND B)
+                                If ( A OP B ) then
+                                    goto $1 // ($1 = 0..7)
+                                else
+                                    goto $2 // ($2 = 0..7)
 
      OPCODE CHARACTERS:
         S       SGL (Single)
@@ -63,7 +66,26 @@ This tool is developed and built on a Debian stable system. An experimental Debi
 This program accepts the source code from stdin and generates the C code on stdout.
 Listing and errors are put to stderr.
 
-    ./gpif_compiler <testwave.wvf >testwave.inc
+`cat testwave.wvf`
+
+    ; Test waveform file for gpif_compiler.cpp
+    ;
+    ; Comment header
+    ;
+            .TRICTL         1               ; Assume TRICTL=1
+            .EP             4               ; Assume for Endpoint 4
+            .WAVEFORM       7               ; Name this waveform7
+            .EPXGPIFFLGSEL  EF
+            SG+DN                           ; Simple NDP
+            J       RDY1 AND RDY1 $4 $2 OE3 ; DP example
+            S+GDN   1 OE3 OE1 CTL3 CTL2
+            Z       20
+            JS+GDN* RDY0 AND RDY4 $4 $5
+            JSG     RDY0 XOR RDY2 $1 $7 OE3 CTL2
+            JSG     RDY0 /AND EF $0 $5 OE3 CTL1
+    ; End
+
+`./gpif_compiler <testwave.wvf >testwave.inc`
 
     ;
     ;       Environment in effect:
@@ -79,28 +101,23 @@ Listing and errors are put to stderr.
             .WAVEFORM       7
     ;
     $0  013E0000    SG+DN           ;  Simple NDP
-    $1  01010980    J       RDY1 AND RDY1 $1 $0 OE3         ;  DP example
-    $2  013E00AC    S+GDN   1 OE3 OE1 CTL3 CTL2 
-    $3  01000000    Z
-    $4  993F0400    JS+GDN* RDY0 AND RDY4 $1 $3 
-    $5  39318284    JSG     RDY0 XOR RDY2 $1 $7 OE3 CTL2 
-    $6  2931C682    JSG     RDY0 /AND EF $1 $5 OE3 CTL1 
+    $1  20010980    J       RDY1 AND RDY1 $4 $2 OE3         ;  DP example
+    $2  013E00AC    S+GDN   1 OE3 OE1 CTL3 CTL2
+    $3  14000000    Z       20
+    $4  953F0400    JS+GDN* RDY0 AND RDY4 $4 $5
+    $5  0F318284    JSG     RDY0 XOR RDY2 $1 $7 OE3 CTL2
+    $6  0531C682    JSG     RDY0 /AND EF $0 $5 OE3 CTL1
 
+`cat testwave.inc`
 
-
-    cat testwave.inc
-    
     static const unsigned char ifconfig_7 = 0x8a;
 
     static const unsigned char waveform_7[ 32 ] = {
-            0x01,0x01,0x01,0x01,0x99,0x39,0x29,0x00,
+            0x01,0x22,0x01,0x14,0xA5,0x0F,0x05,0x00,
             0x3E,0x01,0x3E,0x00,0x3F,0x31,0x31,0x00,
             0x00,0x80,0xAC,0x00,0x00,0x84,0x82,0x00,
             0x00,0x09,0x00,0x00,0x04,0x82,0xC6,0x00,
     };
-
-
-    
 
 
 ## Decompiling
@@ -115,23 +132,63 @@ To decompile, specify a file name:
     $ ./gpif_decompiler testgpif.c
     128 bytes.
     ; WaveForm 0
-    01000007    Z       1 CTL2 CTL1 CTL0 
-    02000002    Z       2 CTL1 
-    01020002    D       1 CTL1 
-    01000007    Z       1 CTL2 CTL1 CTL0 
+    01000007    Z       1 CTL2 CTL1 CTL0
+    02000002    Z       2 CTL1
+    01020002    D       1 CTL1
+    01000007    Z       1 CTL2 CTL1 CTL0
     3F013F07    J       INTRDY AND INTRDY CTL2 CTL1 CTL0 $7 $7
-    01000007    Z       1 CTL2 CTL1 CTL0 
-    01000007    Z       1 CTL2 CTL1 CTL0 
+    01000007    Z       1 CTL2 CTL1 CTL0
+    01000007    Z       1 CTL2 CTL1 CTL0
     ; WaveForm 1
-    03020005    D       3 CTL2 CTL0 
-    01020007    D       1 CTL2 CTL1 CTL0 
+    03020005    D       3 CTL2 CTL0
+    01020007    D       1 CTL2 CTL1 CTL0
     3F053F07    JN      INTRDY AND INTRDY CTL2 CTL1 CTL0 $7 $7
-    01000007    Z       1 CTL2 CTL1 CTL0 
-    01000007    Z       1 CTL2 CTL1 CTL0 
-    01000007    Z       1 CTL2 CTL1 CTL0 
-    01000007    Z       1 CTL2 CTL1 CTL0 
+    01000007    Z       1 CTL2 CTL1 CTL0
+    01000007    Z       1 CTL2 CTL1 CTL0
+    01000007    Z       1 CTL2 CTL1 CTL0
+    01000007    Z       1 CTL2 CTL1 CTL0
     ; WaveForm 2
     ...
+
+## Show the structure of the GPIF
+
+The program gpif_show displays the GPIF structure similar to the picture in the TRM (fig. 10-12).
+It takes the output of gpif_compile as input on stdin and displays the result on stdout with additional info on stderr.
+
+`./gpif_show <testwave.inc`
+
+stderr:
+
+    static const unsigned char ifconfig_7 = 0x8a;
+
+    static const unsigned char waveform_7[ 32 ] = {
+	0x01,0x22,0x01,0x14,0xA5,0x0F,0x05,0x00,
+        0x3E,0x01,0x3E,0x00,0x3F,0x31,0x31,0x00,
+	0x00,0x80,0xAC,0x00,0x00,0x84,0x82,0x00,
+	0x00,0x09,0x00,0x00,0x04,0x82,0xC6,0x00,
+    };
+
+stdout:
+
+    State:                $0        $1        $2        $3        $4        $5        $6
+                       --------  --------  --------  --------  --------  --------  --------
+    Inc Addr:             ++                  ++                  ++
+    DataMode:            DATA                DATA                DATA
+    NextData:          UDMACRC             UDMACRC             UDMACRC    SGLDAT    SGLDAT
+    Int Trig:            INT4                INT4                INT4      INT4      INT4
+    cycles:                1         1         1        20         1         1         1
+                                    if                            if        if        if
+                                   RDY1                          RDY0      RDY0      RDY0
+                                    AND                           AND       XOR      /AND
+                                   RDY1                          RDY4      RDY2      FIFO
+                                  then 4                        then 4    then 1    then 0
+                                  else 2                        else 5    else 7    else 5
+    ReExecute:                                                  ReExec
+    CTL0:
+    CTL1:                                      0
+    CTL2:
+    CTL3:                            0         1                             0         0
+
 
 # HowTo: Create GPIF waveform files for the `gpif-compiler`
 
@@ -176,7 +233,7 @@ To be adapted individually for each sample rate, IFCONFIG[7..5] can be set by ps
 	// IFCONFIG.5 : IFCLKOE,  0: tri-state, 1: drive
 	// IFCONFIG.4 : IFCLKPOL, 0: normal polarity, 1: inverted
 	// IFCONFIG.3 : ASYNC,    0: synchronously, ext. clock supplied to IFCLK pin,
-	//                        1: asynchronously, FIFO provides r/w strobes 
+	//                        1: asynchronously, FIFO provides r/w strobes
 	// IFCONFIG.2 : GSTATE,   1: PE.[10] = GSTATE.[10]
 	// IFCONFIG.[10] :       00: ports,
 	//                       01: reserved,
@@ -212,7 +269,7 @@ To be adapted individually for each sample rate, IFCONFIG[7..5] can be set by ps
 
 ## Sample waveform files
 
-My naming convention from the real application is: 
+My naming convention from the real application is:
 - all Mega-sample-values are simple numbers, e.g. 1MS/s -> 1, 16 MS/s -> 16
 - all kilo-sample-values are 100 + k-sample-value/10, e.g. 500 kS/s -> 150, 20 kS/s -> 102
 

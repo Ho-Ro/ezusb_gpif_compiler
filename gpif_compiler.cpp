@@ -487,7 +487,7 @@ main(int argc,char **argv) {
 				instr.logfunc.bits.lfunc = it->second;
 			}
 
-			instr.branch.bits.branch0 = instr.branch.bits.branch1 = 7;	// Default to state 7
+			instr.branch.bits.branchon0 = instr.branch.bits.branchon1 = 7;	// Default to state 7
 			unsigned statex = 0;
 
 			for ( unsigned ox=3; ox<instr.stroperands.size(); ++ox ) {
@@ -506,11 +506,11 @@ main(int argc,char **argv) {
 					}
 
 					switch ( statex++ ) {
-					case 0:
-						instr.branch.bits.branch0 = state;
+					case 0: // 1st target (if true)
+						instr.branch.bits.branchon1 = state;
 						break;
-					case 1:
-						instr.branch.bits.branch1 = state;
+					case 1: // 2nd target (if false)
+						instr.branch.bits.branchon0 = state;
 						break;
 					default:
 						{
@@ -587,7 +587,7 @@ main(int argc,char **argv) {
 		for ( auto pair : pseudotab ) {
 			const std::string& op = pair.first;
 			const unsigned u = pair.second;
-			
+
 			if ( ps == u )
 				return op;
 		}

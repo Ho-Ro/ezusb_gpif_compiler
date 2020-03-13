@@ -164,8 +164,8 @@ decompile(unsigned waveformx,uint8_t data[32]) {
 			}
 			aorb(logfunc.bits.termb);
 
-			oper << "$" << unsigned(branch.bits.branch0)
-				<< " $" << unsigned(branch.bits.branch1);
+			oper << "$" << unsigned(branch.bits.branchon1)
+				<< " $" << unsigned(branch.bits.branchon0);
 
 			outs();
 		}

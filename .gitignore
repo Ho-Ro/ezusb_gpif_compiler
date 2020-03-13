@@ -1,5 +1,6 @@
 gpif_compiler
 gpif_decompiler
+gpif_show
 *.o
 *~
 *.inc

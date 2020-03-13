@@ -35,9 +35,9 @@ union u_logfunc {
 union u_branch {
 	uint8_t			byte;
 	struct s_branch {
-		uint8_t	branch0 : 3;
-		uint8_t	branch1 : 3;
-		uint8_t	reserved : 1;
+		uint8_t	branchon0 : 3;
+		uint8_t	branchon1 : 3;
+		uint8_t	reserved  : 1;
 		uint8_t	reexecute : 1;
 	}			bits;
 };
