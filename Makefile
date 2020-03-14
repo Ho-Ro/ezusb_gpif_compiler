@@ -22,7 +22,7 @@ gpif_show: gpif_show.cpp
 .PHONY: clean
 clean:
 	rm -f *~
-	rm -f examples/*.inc
+	rm -f examples/*~ examples/*.inc
 
 .PHONY: clobber
 clobber: clean

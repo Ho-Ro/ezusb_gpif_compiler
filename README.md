@@ -162,10 +162,10 @@ stderr:
     static const unsigned char ifconfig_7 = 0x8a;
 
     static const unsigned char waveform_7[ 32 ] = {
-	0x01,0x22,0x01,0x14,0xA5,0x0F,0x05,0x00,
+        0x01,0x22,0x01,0x14,0xA5,0x0F,0x05,0x00,
         0x3E,0x01,0x3E,0x00,0x3F,0x31,0x31,0x00,
-	0x00,0x80,0xAC,0x00,0x00,0x84,0x82,0x00,
-	0x00,0x09,0x00,0x00,0x04,0x82,0xC6,0x00,
+        0x00,0x80,0xAC,0x00,0x00,0x84,0x82,0x00,
+        0x00,0x09,0x00,0x00,0x04,0x82,0xC6,0x00,
     };
 
 stdout:
@@ -192,9 +192,12 @@ stdout:
 
 # HowTo: Create GPIF waveform files for the `gpif-compiler`
 
-The files in the `examples`directory are based on the real hardware of the Hantek6022BE, this is a cheap digital storage scope.
+The files in the `examples` directory are based on the real hardware of the Hantek6022BE, this is a cheap digital storage scope.
 It consists mainly of an EzUSB with a dual channel 8-bit ADC [AD9288](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9288.pdf).
 The ADC can operate on variable clock frequencies (20kHz..48MHz) coming from either the IFCLK or CTL2 output of the EzUSB to sample signals of different speeds.
+The waveform files are used in the open source [firmware](https://github.com/Ho-Ro/Hantek6022API/tree/master/PyHT6022/HantekFirmware)
+for the DSO program [OpenHantek6022](https://github.com/OpenHantek/OpenHantek6022).
+
 
 ## Hantek6022BE ADC backend
 
@@ -228,43 +231,43 @@ These values need to be set globally once at device init.
 ## IFCONFIG settings
 To be adapted individually for each sample rate, IFCONFIG[7..5] can be set by pseudo opcodes.
 
-	// IFCONFIG.7 : IFCLKSRC, 0: ext, 1: int (30/48 MHz)
-	// IFCONFIG.6 : 3048MHZ,  0: 30MHz, 1: 48MHz
-	// IFCONFIG.5 : IFCLKOE,  0: tri-state, 1: drive
-	// IFCONFIG.4 : IFCLKPOL, 0: normal polarity, 1: inverted
-	// IFCONFIG.3 : ASYNC,    0: synchronously, ext. clock supplied to IFCLK pin,
-	//                        1: asynchronously, FIFO provides r/w strobes
-	// IFCONFIG.2 : GSTATE,   1: PE.[10] = GSTATE.[10]
-	// IFCONFIG.[10] :       00: ports,
-	//                       01: reserved,
-	//                       10: GPIF (internal) master,
-	//                       11: slave FIFO (external master)
+        // IFCONFIG.7 : IFCLKSRC, 0: ext, 1: int (30/48 MHz)
+        // IFCONFIG.6 : 3048MHZ,  0: 30MHz, 1: 48MHz
+        // IFCONFIG.5 : IFCLKOE,  0: tri-state, 1: drive
+        // IFCONFIG.4 : IFCLKPOL, 0: normal polarity, 1: inverted
+        // IFCONFIG.3 : ASYNC,    0: synchronously, ext. clock supplied to IFCLK pin,
+        //                        1: asynchronously, FIFO provides r/w strobes
+        // IFCONFIG.2 : GSTATE,   1: PE.[10] = GSTATE.[10]
+        // IFCONFIG.[10] :       00: ports,
+        //                       01: reserved,
+        //                       10: GPIF (internal) master,
+        //                       11: slave FIFO (external master)
 
 
 ## Timing definition examples for different sample rates
 
-	//
-	// The program for fastest speed 30/48 MS/s is:
-	// jump 0,  CTL2=Z, FIFO, LOOP
-	//
-	// The program for 24 MS/s (@48MHz) or 16 MS/s (@30MHz) is:
-	// wait 1,  CTL2=0, OE2=1, FIFO
-	// jump 0,  CTL2=1, OE2=1
-	//
-	// The program for low-speed, e.g. 500 kS/s (@30MHz), is:
-	// wait 30, CTL2=0, OE2=1, FIFO
-	// wait 29, CTL2=1, OE2=1
-	// jump 0,  CTL2=1
-	//
-	// The program for very low-speed, e.g. 20 kS/s (@30MHz), is:
-	// wait 250, CTL2=0, OE2=1, FIFO
-	// wait 250, CTL2=1, OE2=1
-	// wait 250, CTL2=1, OE2=1
-	// wait 250, CTL2=1, OE2=1
-	// wait 250, CTL2=1, OE2=1
-	// wait 249, CTL2=1, OE2=1
-	// jump 0,   CTL2=1
-	//
+        //
+        // The program for fastest speed 30/48 MS/s is:
+        // jump 0,  CTL2=Z, FIFO, LOOP
+        //
+        // The program for 24 MS/s (@48MHz) or 16 MS/s (@30MHz) is:
+        // wait 1,  CTL2=0, OE2=1, FIFO
+        // jump 0,  CTL2=1, OE2=1
+        //
+        // The program for low-speed, e.g. 500 kS/s (@30MHz), is:
+        // wait 30, CTL2=0, OE2=1, FIFO
+        // wait 29, CTL2=1, OE2=1
+        // jump 0,  CTL2=1
+        //
+        // The program for very low-speed, e.g. 20 kS/s (@30MHz), is:
+        // wait 250, CTL2=0, OE2=1, FIFO
+        // wait 250, CTL2=1, OE2=1
+        // wait 250, CTL2=1, OE2=1
+        // wait 250, CTL2=1, OE2=1
+        // wait 250, CTL2=1, OE2=1
+        // wait 249, CTL2=1, OE2=1
+        // jump 0,   CTL2=1
+        //
 
 
 ## Sample waveform files

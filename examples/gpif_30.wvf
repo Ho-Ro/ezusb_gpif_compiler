@@ -2,7 +2,7 @@
 ;
 ; Comment header
 ;
-	.WAVEFORM	30		; Name this waveform
+	.WAVEFORM	30		; 30 MS/s
 
 	.TRICTL		1		; Assume TRICTL=1
 
