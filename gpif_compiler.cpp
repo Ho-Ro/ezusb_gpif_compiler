@@ -656,10 +656,10 @@ main(int argc,char **argv) {
 
 	instrs.resize(8);
 
-	std::cout << "static const unsigned char ifconfig_" << waveformx << " = 0x";
+	std::cout << "#define ifconfig_" << waveformx << " 0x";
 	std::cout.width(2);
 	std::cout.fill('0');
-	std::cout << std::hex << ifconfig << std::dec << ";\n\n";
+	std::cout << std::hex << ifconfig << std::dec << "\n\n";
 
 	std::cout << "static const unsigned char waveform_" << waveformx << "[ 32 ] = {\n\t";
 	for ( auto& instr : instrs ) {
